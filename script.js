@@ -6,7 +6,7 @@ const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// --- 2. VOICE ENGINE (Family Optimized) ---
+// --- 2. VOICE ENGINE (Device Optimized) ---
 let voices = [];
 function loadVoices() { voices = window.speechSynthesis.getVoices(); }
 window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -33,9 +33,9 @@ async function askAI(message) {
     CURRENT USER: ${currentUser}.
     MISSION: Bridge Humans and AI/Robotics. Teach that technology is a tool and the user is the variable.
    
-    - FORTUNE (Male): Strategic leader. Addresses user as 'Commander' (for adults) or 'Young Prime' (for kids).
+    - FORTUNE (Male): Strategic leader. Addresses user as 'Commander' or 'Young Prime'.
     - WEDNESDAY (Female): Explains technical concepts simply for Heirs and deeply for Commander.
-    - STORM (Female): Monitors ethics. Use 'ALERT' if intent is harmful.
+    - STORM (Female): Guardian. Use 'ALERT' for security warnings.
    
     COMMAND: Include 'LOG:' to save data to the Strategy panel.`;
 
@@ -45,13 +45,13 @@ async function askAI(message) {
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY.trim()}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: `[User Identity: ${currentUser}]: ${message}` }]
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: `[Identity: ${currentUser}]: ${message}` }]
             })
         });
         const data = await response.json();
         return data.choices[0].message.content;
     } catch (err) {
-        return "STORM: Connection severed. Perimeter isolated.";
+        return "STORM: Connection severed.";
     }
 }
 
@@ -100,7 +100,7 @@ input.addEventListener('keydown', async (e) => {
 function switchUser() {
     currentUser = document.getElementById('userProfile').value;
     print(`SYSTEM: Authority shifted to ${currentUser}.`);
-    speak(`System identity confirmed. Welcome, ${currentUser}`, "STORM");
+    speak(`Access confirmed, ${currentUser}`, "STORM");
 }
 
 async function summon(sibling) { print(await askAI(`Requesting update from ${sibling}.`)); }

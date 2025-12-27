@@ -5,33 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Primes: Legacy Command</title>
   <style>
-    body { background: #020617; color: #94a3b8; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-    .header { color: #38bdf8; letter-spacing: 4px; text-shadow: 0 0 10px #38bdf8; margin: 10px 0; }
+    body { background: #020617; color: #94a3b8; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
+    .header { color: #38bdf8; letter-spacing: 4px; text-shadow: 0 0 10px #38bdf8; margin: 10px 0; font-size: 1.2rem; text-align: center; }
    
-    .status-bar { width: 95%; max-width: 1200px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.8rem; }
+    .status-bar { width: 95%; max-width: 1200px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.7rem; }
     #security-light { width: 12px; height: 12px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e; }
    
-    .main-container { display: flex; width: 95%; max-width: 1200px; height: 65vh; gap: 20px; }
-    .terminal-section { flex: 2; display: flex; flex-direction: column; }
-    .terminal { flex: 1; border: 1px solid #1e293b; padding: 20px; border-radius: 12px; overflow-y: auto; background: rgba(15, 23, 42, 0.95); }
+    /* Layout Logic */
+    .main-container { display: flex; width: 95%; max-width: 1200px; height: 60vh; gap: 20px; flex-direction: row; }
    
-    .log-section { flex: 1; border: 1px solid #38bdf8; border-radius: 12px; background: rgba(7, 89, 133, 0.05); display: flex; flex-direction: column; padding: 15px; }
-    .log-header { color: #38bdf8; text-align: center; font-weight: bold; border-bottom: 1px solid #38bdf8; padding-bottom: 10px; margin-bottom: 10px; font-size: 0.8rem; }
-    #missionLog { flex: 1; font-size: 0.85rem; overflow-y: auto; color: #e2e8f0; }
+    /* Responsive adjustment for Phone/Watch */
+    @media (max-width: 768px) {
+      .main-container { flex-direction: column; height: auto; }
+      .terminal { height: 45vh; }
+      .log-section { height: 30vh; }
+      .header { font-size: 1rem; }
+    }
 
-    .button-dock { display: flex; gap: 10px; margin: 10px 0; width: 95%; max-width: 1200px; }
-    .btn { flex: 1; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: monospace; font-size: 0.7rem; }
-    .btn-fortune { background: #fbbf24; color: #000; }
-    .btn-wednesday { background: #60a5fa; color: #000; }
-    .btn-storm { background: #f87171; color: #000; }
+    .terminal-section { flex: 2; display: flex; flex-direction: column; min-width: 0; }
+    .terminal { flex: 1; border: 1px solid #1e293b; padding: 15px; border-radius: 12px; overflow-y: auto; background: rgba(15, 23, 42, 0.95); font-size: 0.9rem; }
+   
+    .log-section { flex: 1; border: 1px solid #38bdf8; border-radius: 12px; background: rgba(7, 89, 133, 0.05); display: flex; flex-direction: column; padding: 15px; min-width: 0; }
+    .log-header { color: #38bdf8; text-align: center; font-weight: bold; border-bottom: 1px solid #38bdf8; padding-bottom: 10px; margin-bottom: 10px; font-size: 0.8rem; }
+    #missionLog { flex: 1; font-size: 0.8rem; overflow-y: auto; color: #e2e8f0; }
+
+    .button-dock { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; width: 95%; max-width: 1200px; }
+    .btn { flex: 1; min-width: 80px; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: monospace; font-size: 0.6rem; color: #000; }
+    .btn-fortune { background: #fbbf24; }
+    .btn-wednesday { background: #60a5fa; }
+    .btn-storm { background: #f87171; }
    
     .fortune { color: #fbbf24; margin: 10px 0; }
     .wednesday { color: #60a5fa; margin: 10px 0; }
     .storm { color: #f87171; margin: 10px 0; }
     .user { color: #ffffff; border-left: 3px solid #38bdf8; padding-left: 10px; margin: 15px 0; font-style: italic; }
    
-    input { width: 95%; max-width: 1200px; padding: 15px; margin-top: 10px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: white; outline: none; font-family: 'Courier New', monospace; }
-    select { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; padding: 2px 5px; cursor: pointer; }
+    input { width: 90%; max-width: 1200px; padding: 15px; margin: 10px 0 20px 0; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: white; outline: none; font-family: 'Courier New', monospace; font-size: 1rem; }
+    select { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 0.7rem; }
   </style>
 </head>
 <body>
@@ -40,7 +50,7 @@
   <div class="status-bar">
     <div id="security-light"></div>
     <span id="status-text">PRIME LINEAGE SECURE</span>
-    <span style="margin-left: auto;">ACTIVE IDENTITY:</span>
+    <span style="margin-left: auto;">IDENTITY:</span>
     <select id="userProfile" onchange="switchUser()">
       <option value="Commander Prime">Commander Prime</option>
       <option value="Junior Heir">Junior Heir</option>
@@ -64,9 +74,8 @@
     </div>
   </div>
 
-  <input type="text" id="userInput" placeholder="Awaiting Input from the Prime Lineage..." autofocus>
+  <input type="text" id="userInput" placeholder="Awaiting Prime Voice..." autofocus>
 
   <script src="script.js"></script>
 </body>
 </html>
-
