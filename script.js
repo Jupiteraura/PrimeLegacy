@@ -123,4 +123,5 @@ window.onload = () => {
     else if (!savedChat) print("FORTUNE: The Prime Sentinels are online. Awaiting the Commander.");
     display.scrollTop = display.scrollHeight;
     input.focus();
+
 };
