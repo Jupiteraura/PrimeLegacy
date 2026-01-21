@@ -15,16 +15,20 @@
 
     <div class="main-container">
         <div class="terminal-area">
-            <div id="display"></div>
-            <div class="input-row">
-                <input type="text" id="userInput" placeholder="Command or /key...">
-            </div>
-            <div class="quick-summons">
-                <button onclick="quickSummon('FORTUNE')">FORTUNE</button>
-                <button onclick="quickSummon('WEDNESDAY')">WEDNESDAY</button>
-                <button onclick="quickSummon('STORM')">STORM</button>
-            </div>
-        </div>
+    <div id="display"></div>
+    <div class="input-row" style="display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="userInput" placeholder="Command or /key..." style="flex-grow: 1;">
+        <button id="micBtn" style="background: transparent; border: 1px solid #00ffcc; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <span id="micIcon" style="font-size: 20px;">🎤</span>
+        </button>
+    </div>
+    <div class="quick-summons">
+        <button onclick="quickSummon('FORTUNE')">FORTUNE</button>
+        <button onclick="quickSummon('WEDNESDAY')">WEDNESDAY</button>
+        <button onclick="quickSummon('STORM')">STORM</button>
+    </div>
+</div>
+
 
         <div id="sidebar">
             <div class="glow log-header">STRATEGY LOG</div>
@@ -35,4 +39,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
