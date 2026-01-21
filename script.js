@@ -1,34 +1,50 @@
-let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY');
+let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY'); 
 const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
+// --- 1. IPHONE POWER UNLOCK & MIC WAKEUP ---
 function unlockAudio() {
-    // 1. Wakes up the speakers
     const silent = new SpeechSynthesisUtterance(' ');
     window.speechSynthesis.speak(silent);
-   
-    // 2. FORCES iPhone to ask for Microphone permission
+    
+    // Force permission check immediately on first tap
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                // We stop the stream immediately; we just wanted the "Allow" box to pop up
-                stream.getTracks().forEach(track => track.stop());
-                console.log("Mic Access Granted");
-            })
-            .catch(err => console.log("Mic Access Denied by User or Settings"));
+            .then(stream => stream.getTracks().forEach(track => track.stop()))
+            .catch(err => console.log("Mic access requires settings check."));
     }
 
-    window.speechSynthesis.getVoices();
+    window.speechSynthesis.getVoices(); 
     window.removeEventListener('touchstart', unlockAudio);
     window.removeEventListener('click', unlockAudio);
 }
+window.addEventListener('touchstart', unlockAudio);
+window.addEventListener('click', unlockAudio);
 
+function speak(text, persona) {
+    window.speechSynthesis.cancel();
+    
+    // Create a new utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Sentinel Voice Profiles
+    if (persona === "FORTUNE") { utterance.pitch = 0.7; utterance.rate = 0.9; }
+    else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
+    else { utterance.pitch = 1.0; utterance.rate = 1.0; }
 
-// --- 2. THE BRAIN (SOLO MODE FILTER) ---
+    // iPhone Hardware Nudge: Play a silent puff to reclaim the speaker channel
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    
+    setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+    }, 150);
+}
+
+// --- 2. THE BRAIN (AGGRESSIVE SOLO FILTER) ---
 async function askAI(message) {
     if (!GROQ_KEY) return "STORM: Neural link required. Enter /key.";
-   
+    
     let target = "";
     const msgUpper = message.toUpperCase();
     if (msgUpper.includes("FORTUNE")) target = "FORTUNE";
@@ -36,8 +52,7 @@ async function askAI(message) {
     else if (msgUpper.includes("STORM")) target = "STORM";
 
     const history = localStorage.getItem('prime_memory') || "";
-   
-    // THE "SILENCE" FILTER
+    
     let systemPrompt = "";
     if (target !== "") {
         systemPrompt = `You are ONLY ${target}. The others (Fortune, Wednesday, Storm) are OFFLINE. Speak only as ${target}. NO TEAM REPORTS. Format: ${target}: [Message]`;
@@ -52,7 +67,7 @@ async function askAI(message) {
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-                temperature: 0.5 // Lower temperature = more obedient
+                temperature: 0.5 
             })
         });
         const data = await response.json();
@@ -62,18 +77,16 @@ async function askAI(message) {
     } catch { return "STORM: Transmission failed."; }
 }
 
-// --- 3. UI ENGINE ---
+// --- 3. UI & LOG ENGINE ---
 function print(text, isUser = false) {
     let name = "FORTUNE", css = "fortune", cleanText = text;
     if (isUser) { name = "PRIME"; css = "user"; }
     else {
-        // Log Detection
         if (text.toUpperCase().includes("LOG:")) {
             const entry = text.split(/LOG:/i)[1];
             missionLog.innerHTML = `<div class="log-entry">> ${entry}</div>` + missionLog.innerHTML;
             localStorage.setItem('prime_logs', missionLog.innerHTML);
         }
-        // Persona Detection
         if (text.toUpperCase().includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; cleanText = cleanText.replace(/WEDNESDAY:/i, ""); }
         else if (text.toUpperCase().includes("STORM:")) { name = "STORM"; css = "storm"; cleanText = cleanText.replace(/STORM:/i, ""); }
         else if (text.toUpperCase().includes("FORTUNE:")) { name = "FORTUNE"; css = "fortune"; cleanText = cleanText.replace(/FORTUNE:/i, ""); }
@@ -84,34 +97,7 @@ function print(text, isUser = false) {
     localStorage.setItem('prime_chat', display.innerHTML);
 }
 
-// --- 4. COMMANDS ---
-input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter' && input.value.trim() !== "") {
-        const val = input.value; input.value = "";
-        if (val.startsWith("/key ")) {
-            GROQ_KEY = val.split(" ")[1];
-            localStorage.setItem('PRIME_MASTER_KEY', GROQ_KEY);
-            print("STORM: Master Key Accepted.");
-            return;
-        }
-        print(val, true);
-        const reply = await askAI(val);
-        print(reply);
-    }
-});
-
-function signOut() { localStorage.clear(); location.reload(); }
-async function quickSummon(name) {
-    const reply = await askAI(`Status update, ${name}. Speak alone.`);
-    print(reply);
-}
-
-window.onload = () => {
-    display.innerHTML = localStorage.getItem('prime_chat') || "";
-    missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
-    display.scrollTop = display.scrollHeight;
-};
-// --- NEURAL LISTENER (Voice Input with Speaker Reset) ---
+// --- 4. NEURAL LISTENER (VOICE INPUT) ---
 const micBtn = document.getElementById('micBtn');
 const micIcon = document.getElementById('micIcon');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -122,35 +108,45 @@ if (SpeechRecognition) {
     recognition.lang = 'en-US';
 
     micBtn.onclick = () => {
-        window.speechSynthesis.cancel(); // Clear any hanging speech
+        window.speechSynthesis.cancel(); 
         recognition.start();
         micIcon.innerText = "📡";
-        micBtn.style.boxShadow = "0 0 15px #00ffcc";
     };
 
     recognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
         micIcon.innerText = "🎤";
-        micBtn.style.boxShadow = "none";
-        
-        // 1. Force the microphone to shut down completely
         recognition.stop(); 
 
-        // 2. THE RE-ENGAGEMENT: Tap the speaker engine back to life
-        const wakeup = new SpeechSynthesisUtterance('');
-        window.speechSynthesis.speak(wakeup);
+        // CRITICAL: Force a silent utterance to flip iPhone hardware from REC to PLAY
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
 
         print(transcript, true);
         const reply = await askAI(transcript);
         
-        // 3. Wait 500ms for iPhone to switch hardware modes
-        setTimeout(() => {
-            print(reply);
-        }, 500);
-    };
-
-    recognition.onerror = () => {
-        micIcon.innerText = "🎤";
-        micBtn.style.boxShadow = "none";
+        // Wait for hardware handoff
+        setTimeout(() => { print(reply); }, 600);
     };
 }
+
+input.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter' && input.value.trim() !== "") {
+        const val = input.value; input.value = "";
+        if (val.startsWith("/key ")) {
+            GROQ_KEY = val.split(" ")[1];
+            localStorage.setItem('PRIME_MASTER_KEY', GROQ_KEY);
+            return;
+        }
+        print(val, true);
+        print(await askAI(val));
+    }
+});
+
+function signOut() { localStorage.clear(); location.reload(); }
+async function quickSummon(name) { print(await askAI(`Status update, ${name}. Speak alone.`)); }
+
+window.onload = () => {
+    display.innerHTML = localStorage.getItem('prime_chat') || "";
+    missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
+    display.scrollTop = display.scrollHeight;
+};
