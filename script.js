@@ -1,155 +1,95 @@
-// --- 1. CORE VAULT & IDENTITY ---
 let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY');
-let currentUser = "Commander Prime";
 const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// --- 2. MOBILE AUDIO ENGINE (iPhone Fix) ---
-// Note: You MUST tap the screen once after refresh to enable sound.
-function unlockAudio() {
-    const msg = new SpeechSynthesisUtterance('');
-    window.speechSynthesis.speak(msg);
-    window.removeEventListener('click', unlockAudio);
-    window.removeEventListener('touchstart', unlockAudio);
+// 1. IPHONE AUDIO UNLOCK
+function unlock() {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    window.removeEventListener('touchstart', unlock);
 }
-window.addEventListener('click', unlockAudio);
-window.addEventListener('touchstart', unlockAudio);
-
-let voices = [];
-function loadVoices() { voices = window.speechSynthesis.getVoices(); }
-window.speechSynthesis.onvoiceschanged = loadVoices;
+window.addEventListener('touchstart', unlock);
 
 function speak(text, persona) {
-    if (!window.speechSynthesis || !text) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
    
-    // Voice Pitch Mapping
-    const male = voices.find(v => v.name.includes('David') || v.name.includes('Male'));
-    const female = voices.find(v => v.name.includes('Zira') || v.name.includes('Female'));
+    if (persona === "FORTUNE") utterance.pitch = 0.8;
+    else if (persona === "WEDNESDAY") utterance.pitch = 1.3;
+    else utterance.pitch = 1.0;
 
-    if (persona === "FORTUNE") { if (male) utterance.voice = male; utterance.pitch = 0.6; }
-    else if (persona === "WEDNESDAY") { if (female) utterance.voice = female; utterance.pitch = 1.3; }
-    else if (persona === "STORM") { if (female) utterance.voice = female; utterance.pitch = 0.8; }
-   
     window.speechSynthesis.speak(utterance);
 }
 
-// --- 3. THE BRAIN (With Solo-Mode Logic) ---
+// 2. THE BRAIN WITH SOLO FILTER
 async function askAI(message) {
-    if (!GROQ_KEY) return "STORM: ACCESS DENIED. Terminal is dark.";
+    if (!GROQ_KEY) return "STORM: System Locked. Enter Key.";
    
-    // Check if the user is targeting a specific Sentinel
     let target = "";
-    const msgUpper = message.toUpperCase();
-    if (msgUpper.includes("FORTUNE")) target = "FORTUNE";
-    else if (msgUpper.includes("WEDNESDAY")) target = "WEDNESDAY";
-    else if (msgUpper.includes("STORM")) target = "STORM";
+    if (message.toUpperCase().includes("FORTUNE")) target = "FORTUNE";
+    if (message.toUpperCase().includes("WEDNESDAY")) target = "WEDNESDAY";
+    if (message.toUpperCase().includes("STORM")) target = "STORM";
 
-    const url = "https://api.groq.com/openai/v1/chat/completions";
-   
-    // Dynamic instruction: If target exists, MUTE the others.
-    let systemPrompt = "";
-    if (target !== "") {
-        systemPrompt = `You are ONLY ${target}. Do NOT speak for the other Sentinels. Respond ONLY as ${target}. Format: ${target}: [Message]`;
-    } else {
-        systemPrompt = `You are the PRIME SENTINELS team. Provide a brief status from FORTUNE, WEDNESDAY, and STORM separately. Format: NAME: [Message]`;
-    }
+    const history = localStorage.getItem('prime_memory') || "";
+    const systemPrompt = target !== ""
+        ? `You are ONLY ${target}. Do not speak as others. Context: ${history}`
+        : `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief team report. Context: ${history}`;
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY.trim()}` },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: `[User: ${currentUser}]: ${message}` }
-                ]
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }]
             })
         });
         const data = await response.json();
-        return data.choices[0].message.content;
-    } catch (err) { return "STORM: Perimeter lost. Check connection."; }
+        const reply = data.choices[0].message.content;
+        localStorage.setItem('prime_memory', (history + " " + reply).slice(-500));
+        return reply;
+    } catch { return "STORM: Connection Lost."; }
 }
 
-// --- 4. THE SMART INTERFACE ---
+// 3. UI HANDLERS
 function print(text, isUser = false) {
     let name = "FORTUNE", css = "fortune", cleanText = text;
-   
-    if (isUser) {
-        name = "PRIME"; css = "user";
-    } else {
-        // Mission Log detection
+    if (isUser) { name = "PRIME"; css = "user"; }
+    else {
         if (text.toUpperCase().includes("LOG:")) {
-            const parts = text.split(/LOG:/i);
-            cleanText = parts[0];
-            missionLog.innerHTML = `<div style="margin-bottom:10px; border-bottom:1px solid #1e293b;">> ${parts[1]}</div>` + missionLog.innerHTML;
-            localStorage.setItem('family_mission_log', missionLog.innerHTML);
+            const entry = text.split(/LOG:/i)[1];
+            missionLog.innerHTML = `<div>> ${entry}</div>` + missionLog.innerHTML;
+            localStorage.setItem('prime_logs', missionLog.innerHTML);
         }
-
-        // Persona Identification
-        const textUpper = text.toUpperCase();
-        if (textUpper.includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; cleanText = cleanText.replace(/WEDNESDAY:/i, ""); }
-        else if (textUpper.includes("STORM:")) { name = "STORM"; css = "storm"; cleanText = cleanText.replace(/STORM:/i, ""); }
-        else if (textUpper.includes("FORTUNE:")) { name = "FORTUNE"; css = "fortune"; cleanText = cleanText.replace(/FORTUNE:/i, ""); }
-       
+        if (text.toUpperCase().includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; }
+        else if (text.toUpperCase().includes("STORM:")) { name = "STORM"; css = "storm"; }
         speak(cleanText, name);
     }
-
     display.innerHTML += `<div class="${css}"><strong>${name}:</strong> ${cleanText}</div>`;
     display.scrollTop = display.scrollHeight;
-    if (GROQ_KEY) localStorage.setItem('family_history_v9', display.innerHTML);
-}
-
-// --- 5. COMMANDS & LOCKDOWN ---
-function signOut() {
-    if(confirm("LOCKDOWN: Purge Master Key and History?")) {
-        localStorage.clear();
-        GROQ_KEY = null;
-        location.reload();
-    }
+    localStorage.setItem('prime_chat', display.innerHTML);
 }
 
 input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter' && input.value.trim() !== "") {
-        const msg = input.value; input.value = "";
-       
-        // Key Entry Command
-        if (msg.startsWith("/key ")) {
-            GROQ_KEY = msg.replace("/key ", "").trim();
+    if (e.key === 'Enter') {
+        const val = input.value; input.value = "";
+        if (val.startsWith("/key ")) {
+            GROQ_KEY = val.split(" ")[1];
             localStorage.setItem('PRIME_MASTER_KEY', GROQ_KEY);
-            display.innerHTML = "";
-            print("STORM: Master Key Accepted. Welcome back, Commander.");
             return;
         }
-
-        print(msg, true);
-        const reply = await askAI(msg);
-        print(reply);
+        print(val, true);
+        print(await askAI(val));
     }
 });
 
-function switchUser() {
-    currentUser = document.getElementById('userProfile').value;
-    print(`SYSTEM: User set to ${currentUser}.`);
-}
+function signOut() { localStorage.clear(); location.reload(); }
+async function quickSummon(name) { print(await askAI(`Status update, ${name}`)); }
 
-async function summon(sibling) {
-    const reply = await askAI(`Status update, ${sibling}.`);
-    print(reply);
-}
-
-// --- 6. STARTUP ---
 window.onload = () => {
-    loadVoices();
-    if (!GROQ_KEY) {
-        display.innerHTML = "<div class='storm'><strong>STORM:</strong> SYSTEM ENCRYPTED. Enter Master Key.</div>";
-    } else {
-        if (localStorage.getItem('family_history_v9')) display.innerHTML = localStorage.getItem('family_history_v9');
-        if (localStorage.getItem('family_mission_log')) missionLog.innerHTML = localStorage.getItem('family_mission_log');
-    }
-    display.scrollTop = display.scrollHeight;
+    display.innerHTML = localStorage.getItem('prime_chat') || "";
+    missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
 };
+
 
