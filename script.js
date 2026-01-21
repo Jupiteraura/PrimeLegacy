@@ -1,4 +1,4 @@
-let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY'); 
+let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY');
 const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
@@ -7,7 +7,7 @@ const missionLog = document.getElementById('missionLog');
 function unlockAudio() {
     const silent = new SpeechSynthesisUtterance(' ');
     window.speechSynthesis.speak(silent);
-    
+   
     // Force Mic Permission Pop-up immediately
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
@@ -15,7 +15,7 @@ function unlockAudio() {
             .catch(err => console.log("Mic access requires manual setting."));
     }
 
-    window.speechSynthesis.getVoices(); 
+    window.speechSynthesis.getVoices();
     window.removeEventListener('touchstart', unlockAudio);
     window.removeEventListener('click', unlockAudio);
 }
@@ -25,7 +25,7 @@ window.addEventListener('click', unlockAudio);
 function speak(text, persona) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    
+   
     // Sentinel Voice Profiles
     if (persona === "FORTUNE") { utterance.pitch = 0.7; utterance.rate = 0.9; }
     else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
@@ -33,7 +33,7 @@ function speak(text, persona) {
 
     // iPhone Hardware Wake-up
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-    
+   
     setTimeout(() => {
         window.speechSynthesis.speak(utterance);
     }, 200);
@@ -42,7 +42,7 @@ function speak(text, persona) {
 // --- 2. THE BRAIN (STRICT SOLO FILTER) ---
 async function askAI(message) {
     if (!GROQ_KEY) return "STORM: Neural link required. Enter /key.";
-    
+   
     let target = "";
     const msgUpper = message.toUpperCase();
     if (msgUpper.includes("FORTUNE")) target = "FORTUNE";
@@ -50,8 +50,8 @@ async function askAI(message) {
     else if (msgUpper.includes("STORM")) target = "STORM";
 
     const history = localStorage.getItem('prime_memory') || "";
-    
-    let systemPrompt = target !== "" 
+   
+    let systemPrompt = target !== ""
         ? `You are ONLY ${target}. The others are OFFLINE. Respond strictly as ${target}. Format: ${target}: [Message]`
         : `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief report from each.`;
 
@@ -62,7 +62,7 @@ async function askAI(message) {
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-                temperature: 0.4 
+                temperature: 0.4
             })
         });
         const data = await response.json();
@@ -103,7 +103,7 @@ if (SpeechRecognition) {
     recognition.lang = 'en-US';
 
     micBtn.onclick = () => {
-        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.cancel();
         recognition.start();
         micIcon.innerText = "📡";
     };
@@ -111,14 +111,14 @@ if (SpeechRecognition) {
     recognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
         micIcon.innerText = "🎤";
-        recognition.stop(); 
+        recognition.stop();
 
         // CRITICAL: Force iPhone to switch hardware from REC to PLAY
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
 
         print(transcript, true);
         const reply = await askAI(transcript);
-        
+       
         setTimeout(() => { print(reply); }, 600);
     };
 }
