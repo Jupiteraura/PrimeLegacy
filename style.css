@@ -6,36 +6,24 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden;
 }
 
-#display {
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid #1e293b;
-    padding: 15px;
-    border-radius: 8px;
-}
+.status-bar { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #1e293b; background: #020617; }
+.main-container { display: flex; flex-grow: 1; overflow: hidden; }
+.terminal-area { display: flex; flex-direction: column; flex-grow: 3; padding: 10px; }
+#display { flex-grow: 1; overflow-y: auto; background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; padding: 15px; border-radius: 8px; }
+#sidebar { width: 220px; border-left: 1px solid #1e293b; padding: 10px; background: #020617; overflow-y: auto; }
 
-.glow { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+.glow { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; font-weight: bold; }
+.kill-switch { background: #450a0a; color: white; border: 1px solid #991b1b; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
-/* Persona Styling */
-.user { color: #ffffff; font-style: italic; margin-bottom: 10px; }
-.fortune { color: #60a5fa; border-left: 3px solid #60a5fa; padding-left: 10px; margin-bottom: 10px; }
-.wednesday { color: #a78bfa; border-left: 3px solid #a78bfa; padding-left: 10px; margin-bottom: 10px; }
-.storm { color: #f43f5e; border-left: 3px solid #f43f5e; padding-left: 10px; margin-bottom: 10px; }
+/* Persona Colors & Solo-Lines */
+.user { color: #ffffff; font-style: italic; margin-bottom: 15px; }
+.fortune { color: #60a5fa; border-left: 3px solid #60a5fa; padding-left: 10px; margin-bottom: 15px; text-shadow: 0 0 5px #60a5fa; }
+.wednesday { color: #a78bfa; border-left: 3px solid #a78bfa; padding-left: 10px; margin-bottom: 15px; text-shadow: 0 0 5px #a78bfa; }
+.storm { color: #f43f5e; border-left: 3px solid #f43f5e; padding-left: 10px; margin-bottom: 15px; text-shadow: 0 0 5px #f43f5e; }
 
-input {
-    background: #0f172a;
-    border: 1px solid #334155;
-    color: #00ffcc;
-    padding: 12px;
-    border-radius: 4px;
-}
-
-button {
-    background: #1e293b;
-    color: #94a3b8;
-    border: 1px solid #334155;
-    padding: 8px;
-    cursor: pointer;
-    font-size: 12px;
-}
+input { background: #0f172a; border: 1px solid #334155; color: #00ffcc; padding: 12px; width: 100%; border-radius: 4px; box-sizing: border-box; }
+.quick-summons { display: flex; gap: 5px; margin-top: 10px; }
+.quick-summons button { flex: 1; background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 10px; cursor: pointer; }
