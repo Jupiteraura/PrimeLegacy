@@ -109,4 +109,42 @@ window.onload = () => {
     missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
     display.scrollTop = display.scrollHeight;
 };
+// --- NEURAL LISTENER (Voice Input) ---
+const micBtn = document.getElementById('micBtn');
+const micIcon = document.getElementById('micIcon');
+
+// Check if browser supports Speech Recognition
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false; // Stops listening after you finish a sentence
+    recognition.lang = 'en-US';
+
+    micBtn.onclick = () => {
+        recognition.start();
+        micIcon.innerText = "📡"; // Visual feedback that it's listening
+        micBtn.style.boxShadow = "0 0 15px #00ffcc";
+    };
+
+    recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        micIcon.innerText = "🎤";
+        micBtn.style.boxShadow = "none";
+       
+        // Automatically send the voice command
+        print(transcript, true);
+        const reply = await askAI(transcript);
+        print(reply);
+    };
+
+    recognition.onerror = () => {
+        micIcon.innerText = "🎤";
+        micBtn.style.boxShadow = "none";
+        console.log("Speech recognition error.");
+    };
+} else {
+    micBtn.style.display = "none"; // Hide if browser doesn't support it
+}
+
 
