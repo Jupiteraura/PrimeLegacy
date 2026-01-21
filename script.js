@@ -111,10 +111,9 @@ window.onload = () => {
     missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
     display.scrollTop = display.scrollHeight;
 };
-// --- NEURAL LISTENER (Voice Input) ---
+// --- NEURAL LISTENER (Voice Input with Speaker Reset) ---
 const micBtn = document.getElementById('micBtn');
 const micIcon = document.getElementById('micIcon');
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (SpeechRecognition) {
@@ -123,9 +122,7 @@ if (SpeechRecognition) {
     recognition.lang = 'en-US';
 
     micBtn.onclick = () => {
-        // Stop any current speaking so the mic can hear clearly
-        window.speechSynthesis.cancel();
-       
+        window.speechSynthesis.cancel(); // Clear any hanging speech
         recognition.start();
         micIcon.innerText = "📡";
         micBtn.style.boxShadow = "0 0 15px #00ffcc";
@@ -135,18 +132,21 @@ if (SpeechRecognition) {
         const transcript = event.results[0][0].transcript;
         micIcon.innerText = "🎤";
         micBtn.style.boxShadow = "none";
-       
-        // IMPORTANT: Let the microphone "reset" for a millisecond
-        // before the AI tries to speak back.
-        recognition.stop();
+        
+        // 1. Force the microphone to shut down completely
+        recognition.stop(); 
+
+        // 2. THE RE-ENGAGEMENT: Tap the speaker engine back to life
+        const wakeup = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(wakeup);
 
         print(transcript, true);
         const reply = await askAI(transcript);
-       
-        // Small delay to ensure the iPhone hardware switches back to Speaker
+        
+        // 3. Wait 500ms for iPhone to switch hardware modes
         setTimeout(() => {
             print(reply);
-        }, 300);
+        }, 500);
     };
 
     recognition.onerror = () => {
