@@ -3,38 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PRIME COMMAND | Sentinels</title>
+    <title>PRIME COMMAND</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1e293b;">
-        <div class="glow" style="font-weight: bold; letter-spacing: 2px;">PRIME COMMAND</div>
-        <button onclick="signOut()" style="background: #450a0a; font-size: 10px; border: 1px solid #991b1b; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer;">TERMINATE SESSION</button>
+    <div class="status-bar">
+        <div class="glow">PRIME COMMAND</div>
+        <button onclick="signOut()" class="kill-switch">TERMINATE SESSION</button>
     </div>
 
-    <div style="display: flex; flex-direction: row; flex-grow: 1; overflow: hidden; height: 85vh;">
-       
-        <div style="display: flex; flex-direction: column; flex-grow: 3; padding: 10px;">
-            <div id="display" style="flex-grow: 1; overflow-y: auto;"></div>
-           
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="userInput" placeholder="Enter Command or /key..." style="flex-grow: 1;">
+    <div class="main-container">
+        <div class="terminal-area">
+            <div id="display"></div>
+            <div class="input-row">
+                <input type="text" id="userInput" placeholder="Command or /key...">
             </div>
-
-            <div style="display: flex; gap: 5px; margin-top: 10px; overflow-x: auto;">
+            <div class="quick-summons">
                 <button onclick="quickSummon('FORTUNE')">FORTUNE</button>
                 <button onclick="quickSummon('WEDNESDAY')">WEDNESDAY</button>
                 <button onclick="quickSummon('STORM')">STORM</button>
             </div>
         </div>
 
-        <div id="sidebar" style="width: 250px; border-left: 1px solid #1e293b; padding: 10px; background: #020617;">
-            <div class="glow" style="font-size: 12px; margin-bottom: 10px; border-bottom: 1px solid #00ffcc;">STRATEGY LOG</div>
-            <div id="missionLog" style="font-size: 11px; color: #94a3b8; overflow-y: auto; height: 90%;"></div>
+        <div id="sidebar">
+            <div class="glow log-header">STRATEGY LOG</div>
+            <div id="missionLog"></div>
         </div>
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
+
