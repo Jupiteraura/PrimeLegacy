@@ -115,17 +115,19 @@ window.onload = () => {
 const micBtn = document.getElementById('micBtn');
 const micIcon = document.getElementById('micIcon');
 
-// Check if browser supports Speech Recognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
-    recognition.continuous = false; // Stops listening after you finish a sentence
+    recognition.continuous = false;
     recognition.lang = 'en-US';
 
     micBtn.onclick = () => {
+        // Stop any current speaking so the mic can hear clearly
+        window.speechSynthesis.cancel();
+       
         recognition.start();
-        micIcon.innerText = "📡"; // Visual feedback that it's listening
+        micIcon.innerText = "📡";
         micBtn.style.boxShadow = "0 0 15px #00ffcc";
     };
 
@@ -134,20 +136,21 @@ if (SpeechRecognition) {
         micIcon.innerText = "🎤";
         micBtn.style.boxShadow = "none";
        
-        // Automatically send the voice command
+        // IMPORTANT: Let the microphone "reset" for a millisecond
+        // before the AI tries to speak back.
+        recognition.stop();
+
         print(transcript, true);
         const reply = await askAI(transcript);
-        print(reply);
+       
+        // Small delay to ensure the iPhone hardware switches back to Speaker
+        setTimeout(() => {
+            print(reply);
+        }, 300);
     };
 
     recognition.onerror = () => {
         micIcon.innerText = "🎤";
         micBtn.style.boxShadow = "none";
-        console.log("Speech recognition error.");
     };
-} else {
-    micBtn.style.display = "none"; // Hide if browser doesn't support it
 }
-
-
-
