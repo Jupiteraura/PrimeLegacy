@@ -3,67 +3,78 @@ const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// 1. IPHONE AUDIO UNLOCK
-function unlock() {
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-    window.removeEventListener('touchstart', unlock);
+// --- 1. IPHONE POWER UNLOCK ---
+function unlockAudio() {
+    const silent = new SpeechSynthesisUtterance(' ');
+    window.speechSynthesis.speak(silent);
+    window.speechSynthesis.getVoices();
+    window.removeEventListener('touchstart', unlockAudio);
+    window.removeEventListener('click', unlockAudio);
 }
-window.addEventListener('touchstart', unlock);
+window.addEventListener('touchstart', unlockAudio);
+window.addEventListener('click', unlockAudio);
 
 function speak(text, persona) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-   
-    if (persona === "FORTUNE") utterance.pitch = 0.8;
-    else if (persona === "WEDNESDAY") utterance.pitch = 1.3;
-    else utterance.pitch = 1.0;
-
+    if (persona === "FORTUNE") { utterance.pitch = 0.7; utterance.rate = 0.9; }
+    else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
+    else { utterance.pitch = 1.0; utterance.rate = 1.0; }
     window.speechSynthesis.speak(utterance);
 }
 
-// 2. THE BRAIN WITH SOLO FILTER
+// --- 2. THE BRAIN (SOLO MODE FILTER) ---
 async function askAI(message) {
-    if (!GROQ_KEY) return "STORM: System Locked. Enter Key.";
+    if (!GROQ_KEY) return "STORM: Neural link required. Enter /key.";
    
     let target = "";
-    if (message.toUpperCase().includes("FORTUNE")) target = "FORTUNE";
-    if (message.toUpperCase().includes("WEDNESDAY")) target = "WEDNESDAY";
-    if (message.toUpperCase().includes("STORM")) target = "STORM";
+    const msgUpper = message.toUpperCase();
+    if (msgUpper.includes("FORTUNE")) target = "FORTUNE";
+    else if (msgUpper.includes("WEDNESDAY")) target = "WEDNESDAY";
+    else if (msgUpper.includes("STORM")) target = "STORM";
 
     const history = localStorage.getItem('prime_memory') || "";
-    const systemPrompt = target !== ""
-        ? `You are ONLY ${target}. Do not speak as others. Context: ${history}`
-        : `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief team report. Context: ${history}`;
+   
+    // THE "SILENCE" FILTER
+    let systemPrompt = "";
+    if (target !== "") {
+        systemPrompt = `You are ONLY ${target}. The others (Fortune, Wednesday, Storm) are OFFLINE. Speak only as ${target}. NO TEAM REPORTS. Format: ${target}: [Message]`;
+    } else {
+        systemPrompt = `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief report from each. Context: ${history}`;
+    }
 
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY}` },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY.trim()}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }]
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
+                temperature: 0.5 // Lower temperature = more obedient
             })
         });
         const data = await response.json();
         const reply = data.choices[0].message.content;
-        localStorage.setItem('prime_memory', (history + " " + reply).slice(-500));
+        localStorage.setItem('prime_memory', (history + " | " + reply).slice(-600));
         return reply;
-    } catch { return "STORM: Connection Lost."; }
+    } catch { return "STORM: Transmission failed."; }
 }
 
-// 3. UI HANDLERS
+// --- 3. UI ENGINE ---
 function print(text, isUser = false) {
     let name = "FORTUNE", css = "fortune", cleanText = text;
     if (isUser) { name = "PRIME"; css = "user"; }
     else {
+        // Log Detection
         if (text.toUpperCase().includes("LOG:")) {
             const entry = text.split(/LOG:/i)[1];
-            missionLog.innerHTML = `<div>> ${entry}</div>` + missionLog.innerHTML;
+            missionLog.innerHTML = `<div class="log-entry">> ${entry}</div>` + missionLog.innerHTML;
             localStorage.setItem('prime_logs', missionLog.innerHTML);
         }
-        if (text.toUpperCase().includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; }
-        else if (text.toUpperCase().includes("STORM:")) { name = "STORM"; css = "storm"; }
+        // Persona Detection
+        if (text.toUpperCase().includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; cleanText = cleanText.replace(/WEDNESDAY:/i, ""); }
+        else if (text.toUpperCase().includes("STORM:")) { name = "STORM"; css = "storm"; cleanText = cleanText.replace(/STORM:/i, ""); }
+        else if (text.toUpperCase().includes("FORTUNE:")) { name = "FORTUNE"; css = "fortune"; cleanText = cleanText.replace(/FORTUNE:/i, ""); }
         speak(cleanText, name);
     }
     display.innerHTML += `<div class="${css}"><strong>${name}:</strong> ${cleanText}</div>`;
@@ -71,25 +82,31 @@ function print(text, isUser = false) {
     localStorage.setItem('prime_chat', display.innerHTML);
 }
 
+// --- 4. COMMANDS ---
 input.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && input.value.trim() !== "") {
         const val = input.value; input.value = "";
         if (val.startsWith("/key ")) {
             GROQ_KEY = val.split(" ")[1];
             localStorage.setItem('PRIME_MASTER_KEY', GROQ_KEY);
+            print("STORM: Master Key Accepted.");
             return;
         }
         print(val, true);
-        print(await askAI(val));
+        const reply = await askAI(val);
+        print(reply);
     }
 });
 
 function signOut() { localStorage.clear(); location.reload(); }
-async function quickSummon(name) { print(await askAI(`Status update, ${name}`)); }
+async function quickSummon(name) {
+    const reply = await askAI(`Status update, ${name}. Speak alone.`);
+    print(reply);
+}
 
 window.onload = () => {
     display.innerHTML = localStorage.getItem('prime_chat') || "";
     missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
+    display.scrollTop = display.scrollHeight;
 };
-
 
