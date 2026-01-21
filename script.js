@@ -3,16 +3,16 @@ const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// --- 1. IPHONE POWER UNLOCK & MIC WAKEUP ---
+// --- 1. IPHONE AUDIO & MIC UNLOCK ---
 function unlockAudio() {
     const silent = new SpeechSynthesisUtterance(' ');
     window.speechSynthesis.speak(silent);
     
-    // Force permission check immediately on first tap
+    // Force Mic Permission Pop-up immediately
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => stream.getTracks().forEach(track => track.stop()))
-            .catch(err => console.log("Mic access requires settings check."));
+            .catch(err => console.log("Mic access requires manual setting."));
     }
 
     window.speechSynthesis.getVoices(); 
@@ -24,8 +24,6 @@ window.addEventListener('click', unlockAudio);
 
 function speak(text, persona) {
     window.speechSynthesis.cancel();
-    
-    // Create a new utterance
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Sentinel Voice Profiles
@@ -33,15 +31,15 @@ function speak(text, persona) {
     else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
     else { utterance.pitch = 1.0; utterance.rate = 1.0; }
 
-    // iPhone Hardware Nudge: Play a silent puff to reclaim the speaker channel
+    // iPhone Hardware Wake-up
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
     
     setTimeout(() => {
         window.speechSynthesis.speak(utterance);
-    }, 150);
+    }, 200);
 }
 
-// --- 2. THE BRAIN (AGGRESSIVE SOLO FILTER) ---
+// --- 2. THE BRAIN (STRICT SOLO FILTER) ---
 async function askAI(message) {
     if (!GROQ_KEY) return "STORM: Neural link required. Enter /key.";
     
@@ -53,12 +51,9 @@ async function askAI(message) {
 
     const history = localStorage.getItem('prime_memory') || "";
     
-    let systemPrompt = "";
-    if (target !== "") {
-        systemPrompt = `You are ONLY ${target}. The others (Fortune, Wednesday, Storm) are OFFLINE. Speak only as ${target}. NO TEAM REPORTS. Format: ${target}: [Message]`;
-    } else {
-        systemPrompt = `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief report from each. Context: ${history}`;
-    }
+    let systemPrompt = target !== "" 
+        ? `You are ONLY ${target}. The others are OFFLINE. Respond strictly as ${target}. Format: ${target}: [Message]`
+        : `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief report from each.`;
 
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -67,7 +62,7 @@ async function askAI(message) {
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-                temperature: 0.5 
+                temperature: 0.4 
             })
         });
         const data = await response.json();
@@ -77,7 +72,7 @@ async function askAI(message) {
     } catch { return "STORM: Transmission failed."; }
 }
 
-// --- 3. UI & LOG ENGINE ---
+// --- 3. UI & MISSION LOG ---
 function print(text, isUser = false) {
     let name = "FORTUNE", css = "fortune", cleanText = text;
     if (isUser) { name = "PRIME"; css = "user"; }
@@ -118,13 +113,12 @@ if (SpeechRecognition) {
         micIcon.innerText = "🎤";
         recognition.stop(); 
 
-        // CRITICAL: Force a silent utterance to flip iPhone hardware from REC to PLAY
+        // CRITICAL: Force iPhone to switch hardware from REC to PLAY
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
 
         print(transcript, true);
         const reply = await askAI(transcript);
         
-        // Wait for hardware handoff
         setTimeout(() => { print(reply); }, 600);
     };
 }
@@ -143,7 +137,7 @@ input.addEventListener('keydown', async (e) => {
 });
 
 function signOut() { localStorage.clear(); location.reload(); }
-async function quickSummon(name) { print(await askAI(`Status update, ${name}. Speak alone.`)); }
+async function quickSummon(name) { print(await askAI(`Status update, ${name}.`)); }
 
 window.onload = () => {
     display.innerHTML = localStorage.getItem('prime_chat') || "";
