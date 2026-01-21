@@ -3,25 +3,27 @@ const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// --- 1. IPHONE POWER UNLOCK ---
 function unlockAudio() {
+    // 1. Wakes up the speakers
     const silent = new SpeechSynthesisUtterance(' ');
     window.speechSynthesis.speak(silent);
+   
+    // 2. FORCES iPhone to ask for Microphone permission
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                // We stop the stream immediately; we just wanted the "Allow" box to pop up
+                stream.getTracks().forEach(track => track.stop());
+                console.log("Mic Access Granted");
+            })
+            .catch(err => console.log("Mic Access Denied by User or Settings"));
+    }
+
     window.speechSynthesis.getVoices();
     window.removeEventListener('touchstart', unlockAudio);
     window.removeEventListener('click', unlockAudio);
 }
-window.addEventListener('touchstart', unlockAudio);
-window.addEventListener('click', unlockAudio);
 
-function speak(text, persona) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (persona === "FORTUNE") { utterance.pitch = 0.7; utterance.rate = 0.9; }
-    else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
-    else { utterance.pitch = 1.0; utterance.rate = 1.0; }
-    window.speechSynthesis.speak(utterance);
-}
 
 // --- 2. THE BRAIN (SOLO MODE FILTER) ---
 async function askAI(message) {
@@ -146,5 +148,6 @@ if (SpeechRecognition) {
 } else {
     micBtn.style.display = "none"; // Hide if browser doesn't support it
 }
+
 
 
