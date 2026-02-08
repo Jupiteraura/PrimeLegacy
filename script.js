@@ -1,4 +1,4 @@
-et GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY');
+let GROQ_KEY = localStorage.getItem('PRIME_MASTER_KEY');
 const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
@@ -117,4 +117,5 @@ window.onload = () => {
         speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
 };
+
 
