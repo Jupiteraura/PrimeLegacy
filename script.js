@@ -3,43 +3,33 @@ const input = document.getElementById('userInput');
 const display = document.getElementById('display');
 const missionLog = document.getElementById('missionLog');
 
-// --- 1. IPHONE AUDIO & MIC UNLOCK ---
-function unlockAudio() {
-    const silent = new SpeechSynthesisUtterance(' ');
-    window.speechSynthesis.speak(silent);
-   
-    // Force Mic Permission Pop-up immediately
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => stream.getTracks().forEach(track => track.stop()))
-            .catch(err => console.log("Mic access requires manual setting."));
-    }
-
-    window.speechSynthesis.getVoices();
-    window.removeEventListener('touchstart', unlockAudio);
-    window.removeEventListener('click', unlockAudio);
-}
-window.addEventListener('touchstart', unlockAudio);
-window.addEventListener('click', unlockAudio);
-
+// --- 1. THE VOICES (Gender & Personality) ---
 function speak(text, persona) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-   
-    // Sentinel Voice Profiles
-    if (persona === "FORTUNE") { utterance.pitch = 0.7; utterance.rate = 0.9; }
-    else if (persona === "WEDNESDAY") { utterance.pitch = 1.4; utterance.rate = 1.1; }
-    else { utterance.pitch = 1.0; utterance.rate = 1.0; }
+    const voices = window.speechSynthesis.getVoices();
 
-    // iPhone Hardware Wake-up
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-   
-    setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-    }, 200);
+    if (persona === "FORTUNE") {
+        // MALE - Optimistic & Formal
+        utterance.voice = voices.find(v => v.name.includes('Daniel') || v.name.includes('Male')) || voices[0];
+        utterance.pitch = 0.8; utterance.rate = 0.9;
+    }
+    else if (persona === "WEDNESDAY") {
+        // FEMALE - Sarcastic & Dry
+        utterance.voice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female')) || voices[1];
+        utterance.pitch = 1.3; utterance.rate = 1.0;
+    }
+    else if (persona === "STORM") {
+        // FEMALE - Energetic & Adventurous
+        utterance.voice = voices.find(v => v.name.includes('Victoria') || v.name.includes('Samantha')) || voices[1];
+        utterance.pitch = 1.0; utterance.rate = 1.2;
+    }
+
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); // iPhone Wakeup
+    setTimeout(() => { window.speechSynthesis.speak(utterance); }, 200);
 }
 
-// --- 2. THE BRAIN (STRICT SOLO FILTER) ---
+// --- 2. THE BRAIN (Persona-Based Generation) ---
 async function askAI(message) {
     if (!GROQ_KEY) return "STORM: Neural link required. Enter /key.";
    
@@ -51,18 +41,28 @@ async function askAI(message) {
 
     const history = localStorage.getItem('prime_memory') || "";
    
-    let systemPrompt = target !== ""
-        ? `You are ONLY ${target}. The others are OFFLINE. Respond strictly as ${target}. Format: ${target}: [Message]`
-        : `You are the Sentinels (Fortune, Wednesday, Storm). Give a brief report from each.`;
+    // Establishing the Persona traits the Sentinels requested
+    const personaInstructions = {
+        "FORTUNE": "You are FORTUNE. Your tone is optimistic, enthusiastic, and formal. You provide guidance and strategic advice.",
+        "WEDNESDAY": "You are WEDNESDAY. Your tone is introspective, analytical, and heavily sarcastic with a dry sense of humor.",
+        "STORM": "You are STORM. Your tone is energetic, adventurous, and passionate about weather and the outdoors."
+    };
+
+    let systemPrompt = "";
+    if (target !== "") {
+        systemPrompt = `${personaInstructions[target]} Respond ONLY as them. Do not mention the others. Format: ${target}: [Message]`;
+    } else {
+        systemPrompt = `You are the Sentinels team. Fortune is formal/optimistic, Wednesday is sarcastic/dry, Storm is energetic. Provide a team briefing.`;
+    }
 
     try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://na01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fapi.groq.com%2Fopenai%2Fv1%2Fchat%2Fcompletions&data=05%7C02%7C%7C8356b0b6a45e4e134a1408de67495def%7C84df9e7fe9f640afb435aaaaaaaaaaaa%7C1%7C0%7C639061761956165372%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=GhUdbNI1yl%2Fz5Kjbar1N%2FkyhPi1l8nFvCIn6%2FI%2Bsg7s%3D&reserved=0", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY.trim()}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-                temperature: 0.4
+                temperature: 0.7 // Higher temp allows for more "personality" and sarcasm
             })
         });
         const data = await response.json();
@@ -72,16 +72,12 @@ async function askAI(message) {
     } catch { return "STORM: Transmission failed."; }
 }
 
-// --- 3. UI & MISSION LOG ---
+// --- 3. UI & OUTPUT ENGINE ---
 function print(text, isUser = false) {
     let name = "FORTUNE", css = "fortune", cleanText = text;
     if (isUser) { name = "PRIME"; css = "user"; }
     else {
-        if (text.toUpperCase().includes("LOG:")) {
-            const entry = text.split(/LOG:/i)[1];
-            missionLog.innerHTML = `<div class="log-entry">> ${entry}</div>` + missionLog.innerHTML;
-            localStorage.setItem('prime_logs', missionLog.innerHTML);
-        }
+        // Detect who is speaking to apply correct Voice/Color
         if (text.toUpperCase().includes("WEDNESDAY:")) { name = "WEDNESDAY"; css = "wednesday"; cleanText = cleanText.replace(/WEDNESDAY:/i, ""); }
         else if (text.toUpperCase().includes("STORM:")) { name = "STORM"; css = "storm"; cleanText = cleanText.replace(/STORM:/i, ""); }
         else if (text.toUpperCase().includes("FORTUNE:")) { name = "FORTUNE"; css = "fortune"; cleanText = cleanText.replace(/FORTUNE:/i, ""); }
@@ -89,36 +85,21 @@ function print(text, isUser = false) {
     }
     display.innerHTML += `<div class="${css}"><strong>${name}:</strong> ${cleanText}</div>`;
     display.scrollTop = display.scrollHeight;
-    localStorage.setItem('prime_chat', display.innerHTML);
 }
 
-// --- 4. NEURAL LISTENER (VOICE INPUT) ---
+// --- 4. INPUT HANDLERS ---
 const micBtn = document.getElementById('micBtn');
-const micIcon = document.getElementById('micIcon');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.lang = 'en-US';
-
-    micBtn.onclick = () => {
-        window.speechSynthesis.cancel();
-        recognition.start();
-        micIcon.innerText = "📡";
-    };
-
+    micBtn.onclick = () => { window.speechSynthesis.cancel(); recognition.start(); };
     recognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
-        micIcon.innerText = "🎤";
         recognition.stop();
-
-        // CRITICAL: Force iPhone to switch hardware from REC to PLAY
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
-
         print(transcript, true);
         const reply = await askAI(transcript);
-       
         setTimeout(() => { print(reply); }, 600);
     };
 }
@@ -136,11 +117,16 @@ input.addEventListener('keydown', async (e) => {
     }
 });
 
-function signOut() { localStorage.clear(); location.reload(); }
-async function quickSummon(name) { print(await askAI(`Status update, ${name}.`)); }
-
+// Initialization
+function unlockAudio() {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop()));
+    }
+    window.removeEventListener('click', unlockAudio);
+}
+window.addEventListener('click', unlockAudio);
 window.onload = () => {
     display.innerHTML = localStorage.getItem('prime_chat') || "";
     missionLog.innerHTML = localStorage.getItem('prime_logs') || "";
-    display.scrollTop = display.scrollHeight;
 };
