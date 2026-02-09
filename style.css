@@ -27,3 +27,21 @@ body {
 input { background: #0f172a; border: 1px solid #334155; color: #00ffcc; padding: 12px; width: 100%; border-radius: 4px; box-sizing: border-box; }
 .quick-summons { display: flex; gap: 5px; margin-top: 10px; }
 .quick-summons button { flex: 1; background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 10px; cursor: pointer; }
+
+#display {
+    height: 75vh;          /* Adjust height to fit your screen */
+    overflow-y: auto;      /* Adds the scroll bar when text gets long */
+    overflow-x: hidden;    /* Keeps text from sliding side-to-side */
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    border: 1px solid #444;
+    background: #000;      /* Or your preferred background */
+}
+
+.fortune, .wednesday, .storm, .user {
+    width: 90%;            /* Keeps the bubbles from touching both edges */
+    margin: 10px 0;
+    word-wrap: break-word; /* THIS FIXES THE CUT-OFF TEXT */
+    line-height: 1.4;
+}
